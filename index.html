@@ -17,14 +17,15 @@
         :root {
             --bg: #0b0e14;
             --panel: #111520;
-            --border: #1e2535;
-            --accent: #00e5ff;
-            --accent2: #ff6b35;
+            --border: #f2830d;
+            --accent: #CEA91A;
+            --accent2: #C97317;
             --text: #e8eaf2;
-            --muted: #5a6070;
+            --muted: #ecd30c;
             --success: #00ff9d;
             --error: #ff4d6d;
             --warning: #ffb347;
+			--btnbg: #ea1010;
         }
 
         body {
@@ -48,15 +49,37 @@
             animation: fadeDown 0.6s ease both;
         }
 
-        header h1 {
-            font-size: clamp(2rem, 5vw, 3.5rem);
-            font-weight: 800;
-            line-height: 1;
-            background: linear-gradient(135deg, var(--text) 30%, var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
-        }
+		header h1 {
+			font-size: clamp(2rem, 5vw, 3.5rem);
+			font-weight: 800;
+			line-height: 1;
+			background: linear-gradient(135deg, var(--text) 30%, var(--accent));
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			margin-bottom: 10px;
+			position: relative;
+			display: inline-block;
+		}
+		
+		header h1::after {
+			content: '';
+			position: absolute;
+			bottom: -10px;
+			left: 50%;
+			width: 0;
+			height: 3px;
+			background: linear-gradient(90deg, var(--accent), var(--accent2));
+			transform: translateX(-50%);
+			transition: width 0.5s ease;
+			border-radius: 3px;
+			opacity: 0.7;
+		}
+		
+		header h1:hover::after {
+			width: 100%;
+			opacity: 1;
+			box-shadow: 0 0 15px var(--accent);
+		}
 
         header p {
             color: var(--muted);
@@ -100,7 +123,7 @@
         }
 
         .tab-btn:hover {
-            background: rgba(255,255,255,0.05);
+            background: var(--accent);
             color: var(--text);
         }
 
@@ -322,19 +345,20 @@
         .btn:hover {
             opacity: 0.9;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,229,255,0.3);
+            box-shadow: 0 5px 15px rgba(244, 198, 14, 0.3);
         }
 
         .btn-secondary {
             background: transparent;
             border: 1px solid var(--border);
-            color: var(--text);
+            color: var(--accent);
         }
 
         .btn-secondary:hover {
-            background: rgba(255,255,255,0.05);
+            background: var(--accent);
             transform: none;
             box-shadow: none;
+			color: var(--text);
         }
 
         .btn-small {
@@ -414,8 +438,7 @@
         }
 
         .result-filename:hover {
-            color: var(--accent);
-            text-decoration: underline;
+            color: var(--accent); 
         }
 
         .result-match-count {
@@ -674,6 +697,11 @@
             font-weight: 600;
             margin-left: 10px;
         }
+		
+		.badge:hover {
+			background: var(--accent);
+			box-shadow: 0 4px 8px rgba(0, 229, 255, 0.3);
+		}
 
         @keyframes fadeDown {
             from {
