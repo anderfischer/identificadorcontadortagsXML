@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XML Toolbox - Pesquisa e Contagem de Tags</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;800&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #0b0e14;
+            --panel: #111520;
+            --border: #1e2535;
+            --accent: #00e5ff;
+            --accent2: #ff6b35;
+            --text: #e8eaf2;
+            --muted: #5a6070;
+            --success: #00ff9d;
+            --error: #ff4d6d;
+            --warning: #ffb347;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Syne', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            background-image: 
+                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,229,255,0.07) 0%, transparent 60%),
+                repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(30,37,53,0.3) 40px, rgba(30,37,53,0.3) 41px),
+                repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(30,37,53,0.3) 40px, rgba(30,37,53,0.3) 41px);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeDown 0.6s ease both;
+        }
+
+        header h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--text) 30%, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: var(--muted);
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: var(--panel);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            font-family: 'Syne', sans-serif;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--text);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #000;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeUp 0.5s ease both;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0.6;
+        }
+
+        .card-title {
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+            letter-spacing: 3px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+        }
+
+        /* Grid Layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--accent);
+            background: rgba(0,229,255,0.05);
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .upload-text {
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            color: var(--text);
+            font-weight: 600;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .upload-sub {
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        /* File List */
+        .file-list {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .file-item:hover {
+            background: rgba(0,229,255,0.05);
+            transform: translateX(5px);
+        }
+
+        .file-icon {
+            font-size: 20px;
+            margin-right: 12px;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            color: var(--text);
+            margin-bottom: 3px;
+            cursor: pointer;
+        }
+
+        .file-name:hover {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
+        .file-size {
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .file-remove {
+            color: var(--error);
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .file-remove:hover {
+            background: var(--error);
+            color: #000;
+        }
+
+        /* Search Box */
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-box input {
+            flex: 1;
+            min-width: 200px;
+            padding: 14px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(0,229,255,0.1);
+        }
+
+        .btn {
+            padding: 14px 24px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,229,255,0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.05);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+
+        /* Search Options */
+        .search-options {
+            display: flex;
+            gap: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            color: var(--muted);
+            cursor: pointer;
+        }
+
+        .checkbox-label input {
+            accent-color: var(--accent);
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
+        /* Results */
+        .results-stats {
+            padding: 15px;
+            background: rgba(0,229,255,0.1);
+            border: 1px solid rgba(0,229,255,0.2);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            color: var(--accent);
+        }
+
+        .result-item {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .result-filename {
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+            color: var(--accent2);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-filename:hover {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
+        .result-match-count {
+            background: rgba(0,229,255,0.1);
+            padding: 5px 10px;
+            border-radius: 4px;
+            color: var(--accent);
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+        }
+
+        .result-lines {
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .result-line {
+            padding: 5px 0;
+            border-bottom: 1px dashed var(--border);
+            display: flex;
+            gap: 15px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .result-line:hover {
+            background: rgba(0,229,255,0.1);
+        }
+
+        .result-line:last-child {
+            border-bottom: none;
+        }
+
+        .line-number {
+            color: var(--muted);
+            min-width: 40px;
+        }
+
+        .line-content {
+            color: var(--text);
+            flex: 1;
+        }
+
+        .highlight {
+            background: var(--warning);
+            color: #000;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        /* Tag Counter Specific */
+        .tag-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tag-input-group input {
+            flex: 1;
+            padding: 14px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .tag-input-group input:focus {
+            border-color: var(--accent);
+        }
+
+        .result-box {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .result-number {
+            font-size: 72px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+
+        .result-tag {
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            color: var(--accent2);
+            margin-top: 10px;
+        }
+
+        .tags-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .tag-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tag-item:hover {
+            background: rgba(0,229,255,0.05);
+            transform: translateX(5px);
+        }
+
+        .tag-item.selected {
+            border-color: var(--accent);
+            background: rgba(0,229,255,0.1);
+        }
+
+        .tag-item.highlighted-tag {
+            border-color: var(--warning);
+            background: rgba(255,180,70,0.15);
+            animation: pulse 1s ease;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); box-shadow: 0 0 20px var(--warning); }
+        }
+
+        .tag-name {
+            font-family: 'Fira Code', monospace;
+            color: var(--accent2);
+            font-size: 13px;
+        }
+
+        .tag-count {
+            background: rgba(0,229,255,0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: var(--accent);
+            font-size: 11px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Export Area */
+        .export-area {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+
+        .export-select {
+            padding: 10px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .export-info {
+            color: var(--accent);
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+            margin-left: auto;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--success);
+            color: #000;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 8px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.error {
+            background: var(--error);
+        }
+
+        /* No Results */
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: var(--muted);
+            font-family: 'Fira Code', monospace;
+        }
+
+        .no-results-icon {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        /* Hint */
+        .hint {
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            color: #b0bcd4;
+            padding: 12px 16px;
+            background: rgba(0,229,255,0.06);
+            border-radius: 6px;
+            border-left: 2px solid var(--accent);
+            margin-bottom: 20px;
+        }
+
+        .hint strong {
+            color: var(--accent);
+        }
+
+        /* Badge */
+        .badge {
+            background: var(--accent2);
+            color: #000;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        @keyframes fadeDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>XML Toolbox</h1>
+        <p>Pesquise textos e conte tags em múltiplos arquivos XML</p>
+    </header>
+
+    <div class="container">
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('search')">
+                <span>🔍</span> Pesquisar Texto
+            </button>
+            <button class="tab-btn" onclick="switchTab('counter')">
+                <span>📊</span> Contador de Tags
+            </button>
+        </div>
+
+        <!-- Search Tab -->
+        <div id="searchTab" class="tab-content active">
+            <div class="card">
+                <div class="card-title"><span></span>Upload de Arquivos XML</div>
+                
+                <!-- Upload Area -->
+                <div class="upload-area" id="searchUploadArea">
+                    <input type="file" id="searchFileInput" multiple accept=".xml" style="display: none;">
+                    <span class="upload-icon">📁</span>
+                    <span class="upload-text">Arraste seus arquivos XML aqui</span>
+                    <span class="upload-sub">ou clique para selecionar</span>
+                </div>
+
+            <div class="card">
+                <div class="card-title"><span></span>Pesquisar nos Arquivos</div>
+                
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Digite o texto para pesquisar...">
+                    <button class="btn" onclick="performSearch()">Pesquisar</button>
+                    <button class="btn btn-secondary" onclick="clearSearch()">Limpar</button>
+                </div>
+
+                <div class="search-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="caseSensitive"> Diferenciar maiúsculas/minúsculas
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="wholeWord"> Palavra completa
+                    </label>
+                </div>
+
+                <!-- File List -->
+                <div class="file-list" id="searchFileList">
+                    <div class="file-list-header">
+                        <span class="file-count" id="searchFileCount">📄 Nenhum arquivo carregado</span>
+                    </div>
+                    <div id="searchFilesContainer"></div>
+                </div>
+            </div>
+ 
+ <div id="searchResults">
+                    <!-- Resultados serão inseridos aqui -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Counter Tab -->
+        <div id="counterTab" class="tab-content">
+            <div class="grid-2">
+                <!-- XML Input -->
+                <div class="card">
+                    <div class="card-title"><span></span>XML Input</div>
+                    <textarea id="xmlInput" rows="12" placeholder="Cole seu XML aqui...
+
+Exemplo:
+&lt;root&gt;
+  &lt;item&gt;A&lt;/item&gt;
+  &lt;item&gt;B&lt;/item&gt;
+  &lt;section&gt;
+    &lt;item&gt;C&lt;/item&gt;
+  &lt;/section&gt;
+&lt;/root&gt;"></textarea>
+                    
+                    <div class="upload-area" id="counterUploadArea" style="margin-top: 20px;">
+                        <input type="file" id="counterFileInput" accept=".xml" style="display: none;">
+                        <span class="upload-icon">📄</span>
+                        <span class="upload-text">Carregar arquivo XML</span>
+                        <span class="upload-sub">clique ou arraste aqui</span>
+                    </div>
+                    
+                    <div id="counterFileBadge" style="display: none; margin-top: 10px; padding: 10px; background: rgba(0,229,255,0.1); border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 12px;">
+                        <span id="counterFileName"></span>
+                        <button class="btn btn-secondary" style="margin-left: 10px; padding: 5px 10px;" onclick="clearCounterFile()">✕</button>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="card">
+                    <div class="card-title"><span></span>Configuração</div>
+                    
+                    <div class="hint">
+                        Digite uma tag sem os símbolos &lt; &gt;. Ex: <strong>item</strong>, <strong>produto</strong>
+                    </div>
+
+                    <div class="tag-input-group">
+                        <input type="text" id="tagInput" placeholder="nome da tag..." autocomplete="off">
+                        <button class="btn" onclick="countTag()">Contar</button>
+                    </div>
+
+                    <div class="search-options" style="margin-bottom: 20px;">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="counterCaseSensitive"> Case sensitive
+                        </label>
+                    </div>
+
+                    <button class="btn" style="width: 100%;" onclick="countTag()">▶ Analisar XML</button>
+
+                    <div class="result-box" id="resultBox">
+                        <div class="no-results" style="padding: 20px;">
+                            <span class="no-results-icon">📊</span>
+                            <span>Cole o XML e clique em Analisar</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- All Tags Section -->
+            <div class="card" id="allTagsCard" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                    <div class="card-title" style="margin-bottom: 0;"><span></span>Tags Encontradas</div>
+                    
+                    <div class="export-area">
+                        <span class="export-info" id="selectedTagsInfo">0 selecionadas</span>
+                        
+                        <select class="export-select" id="exportFormat">
+                            <option value="txt">TXT</option>
+                            <option value="csv">CSV (;)</option>
+                        </select>
+                        
+                        <button class="btn" onclick="exportSelectedTags()">📥 Exportar selecionadas</button>
+                    </div>
+                </div>
+
+                <div class="tags-list" id="allTagsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ==================== ESTADO GLOBAL ====================
+        const searchFiles = new Map();
+        let lastDoc = null;
+        let lastTagList = [];
+        let lastCaseSensitive = false;
+        let currentSearchTerm = '';
+        let currentHighlightedTag = null;
+
+        // ==================== INICIALIZAÇÃO ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Search Tab - Upload
+            const searchUploadArea = document.getElementById('searchUploadArea');
+            const searchFileInput = document.getElementById('searchFileInput');
+            
+            searchUploadArea.addEventListener('click', () => searchFileInput.click());
+            searchUploadArea.addEventListener('dragover', handleDragOver);
+            searchUploadArea.addEventListener('dragleave', handleDragLeave);
+            searchUploadArea.addEventListener('drop', handleSearchDrop);
+            searchFileInput.addEventListener('change', (e) => handleSearchFiles(e.target.files));
+
+            // Counter Tab - Upload
+            const counterUploadArea = document.getElementById('counterUploadArea');
+            const counterFileInput = document.getElementById('counterFileInput');
+            
+            counterUploadArea.addEventListener('click', () => counterFileInput.click());
+            counterUploadArea.addEventListener('dragover', handleDragOver);
+            counterUploadArea.addEventListener('dragleave', handleDragLeave);
+            counterUploadArea.addEventListener('drop', handleCounterDrop);
+            counterFileInput.addEventListener('change', handleCounterFile);
+
+            // Enter key no campo de pesquisa
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') performSearch();
+            });
+
+            // Enter key no campo de tag
+            document.getElementById('tagInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') countTag();
+            });
+        }
+
+        // ==================== UTILITÁRIOS ====================
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = `toast ${isError ? 'error' : ''} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // ==================== TABS ====================
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            if (tab === 'search') {
+                document.querySelector('.tab-btn').classList.add('active');
+                document.getElementById('searchTab').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('counterTab').classList.add('active');
+            }
+        }
+
+        // ==================== SEARCH TAB FUNCTIONS ====================
+        async function handleSearchFiles(files) {
+            const xmlFiles = Array.from(files).filter(file => 
+                file.name.toLowerCase().endsWith('.xml')
+            );
+
+            if (xmlFiles.length === 0) {
+                showToast('Selecione apenas arquivos XML', true);
+                return;
+            }
+
+            xmlFiles.forEach(file => {
+                if (!searchFiles.has(file.name)) {
+                    searchFiles.set(file.name, file);
+                }
+            });
+
+            updateSearchFileList();
+        }
+
+        function handleSearchDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            handleSearchFiles(files);
+        }
+
+        function updateSearchFileList() {
+            const container = document.getElementById('searchFilesContainer');
+            const fileCount = document.getElementById('searchFileCount');
+            
+            container.innerHTML = '';
+            
+            if (searchFiles.size === 0) {
+                fileCount.textContent = '📄 Nenhum arquivo carregado';
+                return;
+            }
+
+            fileCount.textContent = `📄 ${searchFiles.size} arquivo(s) carregado(s)`;
+
+            searchFiles.forEach((file, filename) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <span class="file-icon">📄</span>
+                    <div class="file-info">
+                        <div class="file-name" onclick="loadFileInCounter('${filename}')">${filename}</div>
+                        <div class="file-size">${formatFileSize(file.size)}</div>
+                    </div>
+                    <span class="file-remove" onclick="removeSearchFile('${filename}')">✕ Remover</span>
+                `;
+                container.appendChild(fileItem);
+            });
+        }
+
+        window.removeSearchFile = function(filename) {
+            searchFiles.delete(filename);
+            updateSearchFileList();
+            document.getElementById('searchResults').innerHTML = '';
+        };
+
+        window.loadFileInCounter = async function(filename) {
+            const file = searchFiles.get(filename);
+            if (!file) return;
+
+            try {
+                const content = await readFileContent(file);
+                document.getElementById('xmlInput').value = content;
+                document.getElementById('counterFileName').textContent = filename;
+                document.getElementById('counterFileBadge').style.display = 'block';
+                
+                // Mudar para a aba do contador
+                switchTab('counter');
+                
+                // Analisar automaticamente o XML
+                setTimeout(() => {
+                    countTag();
+                    
+                    // Se tiver um termo de pesquisa, destacar a tag correspondente
+                    if (currentSearchTerm) {
+                        highlightTagFromSearch(currentSearchTerm);
+                    }
+                }, 300);
+                
+                showToast(`Arquivo "${filename}" carregado no contador`);
+            } catch (error) {
+                showToast('Erro ao carregar arquivo', true);
+            }
+        };
+
+        async function performSearch() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            
+            if (!searchTerm) {
+                showToast('Digite um termo para pesquisar', true);
+                return;
+            }
+
+            if (searchFiles.size === 0) {
+                showToast('Carregue pelo menos um arquivo XML', true);
+                return;
+            }
+
+            currentSearchTerm = searchTerm;
+            const caseSensitive = document.getElementById('caseSensitive').checked;
+            const wholeWord = document.getElementById('wholeWord').checked;
+
+            const results = [];
+            
+            for (const [filename, file] of searchFiles) {
+                try {
+                    const content = await readFileContent(file);
+                    const fileResults = searchInContent(
+                        content, 
+                        searchTerm, 
+                        filename,
+                        caseSensitive,
+                        wholeWord
+                    );
+                    
+                    if (fileResults.lines.length > 0) {
+                        results.push(fileResults);
+                    }
+                } catch (error) {
+                    console.error(`Erro ao ler ${filename}:`, error);
+                }
+            }
+
+            displaySearchResults(results, searchTerm);
+        }
+
+        function readFileContent(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
+                reader.readAsText(file);
+            });
+        }
+
+        function searchInContent(content, searchTerm, filename, caseSensitive, wholeWord) {
+            const lines = content.split('\n');
+            const matches = [];
+            
+            lines.forEach((line, index) => {
+                let compareLine = caseSensitive ? line : line.toLowerCase();
+                let compareTerm = caseSensitive ? searchTerm : searchTerm.toLowerCase();
+                
+                if (wholeWord) {
+                    const words = compareLine.split(/\b/);
+                    if (words.includes(compareTerm)) {
+                        matches.push({
+                            lineNumber: index + 1,
+                            content: line
+                        });
+                    }
+                } else {
+                    if (compareLine.includes(compareTerm)) {
+                        matches.push({
+                            lineNumber: index + 1,
+                            content: line
+                        });
+                    }
+                }
+            });
+
+            return {
+                filename,
+                matches: matches.length,
+                lines: matches
+            };
+        }
+
+        function displaySearchResults(results, searchTerm) {
+            const resultsDiv = document.getElementById('searchResults');
+            
+            if (results.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="no-results">
+                        <span class="no-results-icon">🔍</span>
+                        <h3>Nenhum resultado encontrado</h3>
+                        <p>O termo "${searchTerm}" não foi encontrado em nenhum arquivo.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const totalMatches = results.reduce((acc, curr) => acc + curr.matches, 0);
+            
+            let html = `
+                <div class="results-stats">
+                    <strong>Resultados encontrados:</strong> 
+                    ${totalMatches} ocorrência(s) em ${results.length} arquivo(s)
+                </div>
+            `;
+
+            results.forEach(result => {
+                const lines = result.lines.map(line => {
+                    const highlightedContent = line.content.replace(
+                        new RegExp(searchTerm, 'gi'),
+                        match => `<span class="highlight">${match}</span>`
+                    );
+                    
+                    return `
+                        <div class="result-line" onclick="loadFileInCounter('${result.filename}')">
+                            <span class="line-number">${line.lineNumber}:</span>
+                            
+                        </div>
+                    `;
+                }).join('');
+
+                html += `
+                    <div class="result-item">
+                        <div class="result-header">
+                            <span class="result-filename" onclick="loadFileInCounter('${result.filename}')">
+                                📄 ${result.filename}
+                                <span class="badge">carregar</span>
+                            </span>
+                            <span class="result-match-count">${result.matches} ocorrência(s)</span>
+                        </div>
+
+                    </div>
+                `;
+            });
+
+            resultsDiv.innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchResults').innerHTML = '';
+            currentSearchTerm = '';
+        }
+
+        // ==================== COUNTER TAB FUNCTIONS ====================
+        function handleCounterDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) loadCounterFile(file);
+        }
+
+        function handleCounterFile(e) {
+            const file = e.target.files[0];
+            if (file) loadCounterFile(file);
+        }
+
+        function loadCounterFile(file) {
+            if (!file.name.toLowerCase().endsWith('.xml')) {
+                showToast('Selecione um arquivo .xml válido', true);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                document.getElementById('xmlInput').value = content;
+                document.getElementById('counterFileName').textContent = file.name;
+                document.getElementById('counterFileBadge').style.display = 'block';
+                showToast('Arquivo carregado: ' + file.name);
+            };
+            reader.readAsText(file);
+        }
+
+        function clearCounterFile() {
+            document.getElementById('xmlInput').value = '';
+            document.getElementById('counterFileBadge').style.display = 'none';
+            document.getElementById('counterFileInput').value = '';
+        }
+
+        function countTag() {
+            const xml = document.getElementById('xmlInput').value.trim();
+            const tag = document.getElementById('tagInput').value.trim();
+            const caseSensitive = document.getElementById('counterCaseSensitive').checked;
+
+            if (!xml) {
+                showToast('Cole um XML válido', true);
+                return;
+            }
+
+            let doc;
+            try {
+                const parser = new DOMParser();
+                doc = parser.parseFromString(xml, 'application/xml');
+                const parseError = doc.querySelector('parsererror');
+                if (parseError) throw new Error('XML inválido');
+            } catch(e) {
+                showToast('XML inválido ou mal formatado', true);
+                return;
+            }
+
+            lastDoc = doc;
+            lastCaseSensitive = caseSensitive;
+
+            lastTagList = getAllTagCounts(doc, caseSensitive);
+            renderAllTags(lastTagList);
+
+            if (!tag) {
+                document.getElementById('resultBox').innerHTML = `
+                    <div class="result-number" style="font-size: 24px;">✓</div>
+                    <div class="result-label">Tags listadas abaixo</div>
+                `;
+                return;
+            }
+
+            const searchTag = caseSensitive ? tag : tag.toLowerCase();
+            let count = 0;
+            const allElements = doc.getElementsByTagName('*');
+            
+            for (let el of allElements) {
+                const elName = caseSensitive ? el.tagName : el.tagName.toLowerCase();
+                if (elName === searchTag) count++;
+            }
+
+            document.getElementById('resultBox').innerHTML = `
+                <div class="result-number">${count}</div>
+                <div class="result-label">ocorrência${count !== 1 ? 's' : ''} encontrada${count !== 1 ? 's' : ''}</div>
+                <div class="result-tag">&lt;${tag}&gt;</div>
+            `;
+        }
+
+        function getAllTagCounts(doc, caseSensitive) {
+            const counts = {};
+            const allElements = doc.getElementsByTagName('*');
+            
+            for (let el of allElements) {
+                const name = caseSensitive ? el.tagName : el.tagName.toLowerCase();
+                counts[name] = (counts[name] || 0) + 1;
+            }
+            
+            return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        }
+
+        function renderAllTags(tags) {
+            document.getElementById('allTagsCard').style.display = 'block';
+
+            const items = tags.map(([name, count], i) => `
+                <div class="tag-item ${currentHighlightedTag === name ? 'highlighted-tag' : ''}" onclick="toggleTagSelection(this)" data-tag="${name}">
+                    <span class="tag-name">&lt;${name}&gt;</span>
+                    <span class="tag-count">${count}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('allTagsList').innerHTML = items;
+            updateSelectedCount();
+        }
+
+        window.toggleTagSelection = function(element) {
+            element.classList.toggle('selected');
+            updateSelectedCount();
+        };
+
+        function updateSelectedCount() {
+            const selected = document.querySelectorAll('.tag-item.selected').length;
+            const total = document.querySelectorAll('.tag-item').length;
+            document.getElementById('selectedTagsInfo').textContent = `${selected} de ${total} selecionadas`;
+        }
+
+        function getSelectedTags() {
+            return Array.from(document.querySelectorAll('.tag-item.selected')).map(el => el.dataset.tag);
+        }
+
+        window.exportSelectedTags = function() {
+            if (!lastDoc || lastTagList.length === 0) {
+                showToast('Analise um XML primeiro!', true);
+                return;
+            }
+
+            const selectedTags = getSelectedTags();
+            if (selectedTags.length === 0) {
+                showToast('Selecione pelo menos uma tag para exportar!', true);
+                return;
+            }
+
+            const format = document.getElementById('exportFormat').value;
+
+            if (format === 'csv') {
+                exportToCSV(selectedTags);
+            } else {
+                exportToTXT(selectedTags);
+            }
+        };
+
+        function exportToCSV(selectedTags) {
+            const rows = [];
+            
+            // Cabeçalho
+            rows.push('Tag;Ocorrências');
+            
+            // Dados
+            const selectedTagsData = lastTagList.filter(([name]) => selectedTags.includes(name));
+            selectedTagsData.forEach(([name, count]) => {
+                rows.push(`${name};${count}`);
+            });
+
+            downloadFile(rows.join('\n'), 'xml-tags.csv', 'text/csv');
+            showToast(`${selectedTags.length} tags exportadas como CSV!`);
+        }
+
+        function exportToTXT(selectedTags) {
+            const lines = [];
+            const now = new Date().toLocaleString('pt-BR');
+
+            lines.push('========================================');
+            lines.push('  XML TAG COUNTER - Exportação de Tags');
+            lines.push(`  Gerado em: ${now}`);
+            lines.push(`  Tags exportadas: ${selectedTags.length}`);
+            lines.push('========================================\n');
+
+            const selectedTagsData = lastTagList.filter(([name]) => selectedTags.includes(name));
+
+            lines.push('--- RESUMO DAS TAGS ---\n');
+            selectedTagsData.forEach(([name, count]) => {
+                lines.push(`<${name}> ${count} ocorrência${count !== 1 ? 's' : ''}`);
+            });
+            lines.push('');
+            lines.push(`Total de elementos: ${selectedTagsData.reduce((s, [, c]) => s + c, 0)}`);
+            lines.push('\n========================================');
+
+            downloadFile(lines.join('\n'), 'xml-tags.txt', 'text/plain');
+            showToast(`${selectedTags.length} tags exportadas como TXT!`);
+        }
+
+        function downloadFile(content, filename, type) {
+            const blob = new Blob(['\uFEFF' + content], { type: type + ';charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function highlightTagFromSearch(searchTerm) {
+            if (!lastTagList) return;
+            
+            // Procurar uma tag que contenha o termo de pesquisa no nome
+            for (const [tagName] of lastTagList) {
+                if (tagName.toLowerCase().includes(searchTerm.toLowerCase())) {
+                    // Remover destaque anterior
+                    if (currentHighlightedTag) {
+                        const prevTag = document.querySelector(`[data-tag="${currentHighlightedTag}"]`);
+                        if (prevTag) prevTag.classList.remove('highlighted-tag');
+                    }
+                    
+                    // Destacar a nova tag
+                    const tagElement = document.querySelector(`[data-tag="${tagName}"]`);
+                    if (tagElement) {
+                        tagElement.classList.add('highlighted-tag');
+                        tagElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        currentHighlightedTag = tagName;
+                        
+                        // Preencher o input com o nome da tag
+                        document.getElementById('tagInput').value = tagName;
+                        
+                        // Contar a tag específica
+                        setTimeout(() => countTag(), 100);
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Tornar funções globais para os atributos onclick
+        window.switchTab = switchTab;
+        window.performSearch = performSearch;
+        window.clearSearch = clearSearch;
+        window.countTag = countTag;
+        window.exportSelectedTags = exportSelectedTags;
+        window.clearCounterFile = clearCounterFile;
+        window.loadFileInCounter = loadFileInCounter;
+    </script>
+</body>
+</html>
